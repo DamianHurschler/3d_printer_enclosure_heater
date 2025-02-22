@@ -11,6 +11,9 @@ U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE, /* c
 #define BUTTON_1_PIN 14 //      IO25
 #define BUTTON_2_PIN 27 // (A0) IO39
 #define BUTTON_3_PIN 26 //      IO36
+bool button1_pressed = false;
+bool button2_pressed = false;
+bool button3_pressed = false;
 
 // Create an instance of the BME680 sensor
 Adafruit_BME680 bme; // I2C
@@ -27,7 +30,6 @@ void setup() {
 
   Wire.begin();
   Serial.begin(115200);
-  Serial.println("\nI2C Scanner");
 
   // Set the button pins as input with internal pull-up resistors
   pinMode(BUTTON_1_PIN, INPUT_PULLUP);
@@ -62,41 +64,33 @@ void setup() {
 
 }
 
+void IRAM_ATTR ISR_button1_pressed() {
+	button1_pressed = true;
+}
+
+void IRAM_ATTR ISR_button2_pressed() {
+	button2_pressed = true;
+}
+
+void IRAM_ATTR ISR_button3_pressed() {
+	button3_pressed = true;
+}
+
 void loop() {
-  byte error, address;
-  int nDevices;
 
-  Serial.println("Scanning...");
+  attachInterrupt(BUTTON_1_PIN, ISR_button1_pressed, FALLING);
+  attachInterrupt(BUTTON_2_PIN, ISR_button2_pressed, FALLING);
+  attachInterrupt(BUTTON_3_PIN, ISR_button3_pressed, FALLING);
 
-  nDevices = 0;
-  for (address = 1; address < 127; address++) {
-    Wire.beginTransmission(address);
-    error = Wire.endTransmission();
+	if (button1_pressed) {
+		Serial.printf("Button 1 has been pressed\n");
+		button1_pressed = false;
+	}
 
-    if (error == 0) {
-      Serial.print("I2C device found at address 0x");
-      if (address < 16)
-        Serial.print("0");
-      Serial.print(address, HEX);
-      Serial.println("  !");
-
-      nDevices++;
-    } else if (error == 4) {
-      Serial.print("Unknown error at address 0x");
-      if (address < 16)
-        Serial.print("0");
-      Serial.println(address, HEX);
-    }
-  }
-  if (nDevices == 0)
-    Serial.println("No I2C devices found\n");
-  else
-    Serial.println("done\n");
-
-  // Read the button states
-  bool button1Pressed = !digitalRead(BUTTON_1_PIN);
-  bool button2Pressed = !digitalRead(BUTTON_2_PIN);
-  bool button3Pressed = !digitalRead(BUTTON_3_PIN);
+  if (button2_pressed) {
+		Serial.printf("Button 2 has been pressed\n");
+		button2_pressed = false;
+	}
 
     // Perform a measurement and check if it's available
   if (!bme.performReading()) {
@@ -122,30 +116,6 @@ void loop() {
   Serial.print("Gas Resistance = ");
   Serial.print(bme.gas_resistance / 1000.0); // Convert to KOhms
   Serial.println(" KOhms");
-
-  // If Button 1 is pressed, display a different message
-  if (button1Pressed) {
-    Serial.println("Button 1 Pressed!");
-    u8g2.clearBuffer();
-    u8g2.drawStr(0, 10, "Button 1 Pressed!");
-    u8g2.sendBuffer();
-  }
-
-  // If Button 2 is pressed, display a different message
-  if (button2Pressed) {
-    Serial.println("Button 2 Pressed!");
-    u8g2.clearBuffer();
-    u8g2.drawStr(0, 10, "Button 2 Pressed!");
-    u8g2.sendBuffer();
-  }
-
-  // If Button 3 is pressed, display a different message
-  if (button3Pressed) {
-    Serial.println("Button 3 Pressed!");
-    u8g2.clearBuffer();
-    u8g2.drawStr(0, 10, "Button 3 Pressed!");
-    u8g2.sendBuffer();
-  }
 
   // Configure the PWM functionalitiy on the specified pin
   ledcSetup(pwmChannel, pwmFrequency, pwmResolution);
