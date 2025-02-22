@@ -17,6 +17,8 @@ bool button3_pressed = false;
 
 // Create an instance of the BME680 sensor
 Adafruit_BME680 bme; // I2C
+float bme_temperature;
+int bme_humidity;
 
 // Define the GPIO pin to use for PWM output
 const int pwmPin = 15; 
@@ -103,13 +105,15 @@ void loop() {
   }
 
   // Read and print temperature
+  bme_temperature = bme.temperature;
   Serial.print("Temperature = ");
-  Serial.print(bme.temperature);
+  Serial.print(bme_temperature);
   Serial.println(" *C");
 
   // Read and print humidity
+  bme_humidity = bme.humidity;
   Serial.print("Humidity = ");
-  Serial.print(bme.humidity);
+  Serial.print(bme_humidity);
   Serial.println(" %");
 
   // Read and print pressure
@@ -121,6 +125,14 @@ void loop() {
   Serial.print("Gas Resistance = ");
   Serial.print(bme.gas_resistance / 1000.0); // Convert to KOhms
   Serial.println(" KOhms");
+
+  // Display a message on the OLED
+  char message [30];
+  sprintf(message, "Current %.1f C %u RH", bme_temperature, bme_humidity);
+  u8g2.clearBuffer(); // clear the internal memory
+  u8g2.setCursor(0,10); // set cursor position
+  u8g2.print(message);
+  u8g2.sendBuffer(); // transfer internal memory to the display
 
   // Configure the PWM functionalitiy on the specified pin
   ledcSetup(pwmChannel, pwmFrequency, pwmResolution);
@@ -134,5 +146,5 @@ void loop() {
   // Write the PWM duty cycle to the pin
   ledcWrite(pwmChannel, dutyCycle);
 
-  delay(1000);  // wait 1 seconds for next scan
+  delay(100);  // wait 1 seconds for next scan
 }
