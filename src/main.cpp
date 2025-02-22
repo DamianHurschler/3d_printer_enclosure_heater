@@ -92,6 +92,11 @@ void loop() {
 		button2_pressed = false;
 	}
 
+  if (button3_pressed) {
+		Serial.printf("Button 3 has been pressed\n");
+		button3_pressed = false;
+	}
+
     // Perform a measurement and check if it's available
   if (!bme.performReading()) {
       Serial.println("Failed to perform reading :(");
