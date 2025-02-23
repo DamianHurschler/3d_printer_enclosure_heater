@@ -18,6 +18,9 @@ bool button1_pressed = false;
 bool button2_pressed = false;
 bool button3_pressed = false;
 
+// Initialise target temperature for temp controller
+int set_temp = 40;
+
 // Create an instance of the BME680 sensor
 Adafruit_BME680 bme; // I2C
 float temp_offset = -3; // Offset to apply to sensor reading to correct temperature.
@@ -144,6 +147,7 @@ void loop() {
     if (enable_serial){
 		  Serial.printf("Button 1 has been pressed\n");
     }
+set_temp = set_temp + 1;
 		button1_pressed = false;
 	}
 
@@ -158,6 +162,7 @@ void loop() {
     if (enable_serial){
       Serial.printf("Button 3 has been pressed\n");
     }
+set_temp = set_temp - 1;
     button3_pressed = false;
 	}
 
