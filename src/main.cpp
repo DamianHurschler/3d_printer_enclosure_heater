@@ -20,7 +20,7 @@ bool button3_pressed = false;
 
 // Create an instance of the BME680 sensor
 Adafruit_BME680 bme; // I2C
-float temp_offset = -2.5; // Offset to apply to sensor reading to correct temperature.
+float temp_offset = -3; // Offset to apply to sensor reading to correct temperature.
 
 // Define the GPIO pin to use for PWM output
 const int pwmPin = 15; 
