@@ -26,18 +26,39 @@ const int pwmChannel = 0;       // PWM channel (0-15)
 const int pwmFrequency = 1000;  // Frequency of PWM signal in Hz
 const int pwmResolution = 8;    // PWM resolution in bits (8 bits gives 256 levels)
 
+// Read data from sensor, and make it available via 'bme' constructor
 void read_sensor(void * arg){
   while(1){
-    // Perform a measurement and check if it's available
+    // Perform a measurement and confirm it's available
     if (!bme.performReading()) {
       Serial.println("Failed to perform reading :(");
     }
-    delay(1000);
+    delay(10000);
   }
 }
 
+
+
+
+// Interrupt functions to handle button presses
+void IRAM_ATTR ISR_button1_pressed() {
+	button1_pressed = true;
+}
+
+void IRAM_ATTR ISR_button2_pressed() {
+	button2_pressed = true;
+}
+
+void IRAM_ATTR ISR_button3_pressed() {
+	button3_pressed = true;
+}
+
+
+
+
 void setup() {
 
+  // Initialise serial debug interface
   Wire.begin();
   Serial.begin(115200);
 
@@ -68,22 +89,13 @@ void setup() {
   u8g2.drawStr(0, 14, "Starting...");  // write something to the internal memory
   u8g2.setContrast(200);  // Maximum contrast
   u8g2.sendBuffer();                // transfer internal memory to the display
-
-xTaskCreate(read_sensor, "read_sensor", 4096, NULL, 2, NULL);
-
+ 
+  // Create independent task which will run continuously 'in the background'
+  xTaskCreate(read_sensor, "read_sensor", 4096, NULL, 2, NULL);
 }
 
-void IRAM_ATTR ISR_button1_pressed() {
-	button1_pressed = true;
-}
 
-void IRAM_ATTR ISR_button2_pressed() {
-	button2_pressed = true;
-}
 
-void IRAM_ATTR ISR_button3_pressed() {
-	button3_pressed = true;
-}
 
 void loop() {
 
@@ -106,15 +118,13 @@ void loop() {
 		button3_pressed = false;
 	}
 
-    
-
   // Read and print temperature
-    Serial.print("Temperature = ");
+  Serial.print("Temperature = ");
   Serial.print(bme.temperature);
   Serial.println(" *C");
 
   // Read and print humidity
-    Serial.print("Humidity = ");
+  Serial.print("Humidity = ");
   Serial.print(bme.humidity);
   Serial.println(" %");
 
@@ -147,6 +157,4 @@ void loop() {
 
   // Write the PWM duty cycle to the pin
   ledcWrite(pwmChannel, dutyCycle);
-
-  delay(100);  // wait 1 seconds for next scan
 }
