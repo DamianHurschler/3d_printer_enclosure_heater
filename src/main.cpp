@@ -17,6 +17,7 @@ U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE, /* c
 bool button1_pressed = false;
 bool button2_pressed = false;
 bool button3_pressed = false;
+volatile double interrupt_time = 0;
 
 // Initialise target temperature for temp controller
 int set_temp = 40;
@@ -78,14 +79,17 @@ void data_to_serial() {
 
 // Interrupt functions to handle button presses
 void IRAM_ATTR ISR_button1_pressed() {
+  interrupt_time = millis();
 	button1_pressed = true;
 }
 
 void IRAM_ATTR ISR_button2_pressed() {
+  interrupt_time = millis();
 	button2_pressed = true;
 }
 
 void IRAM_ATTR ISR_button3_pressed() {
+  interrupt_time = millis();
 	button3_pressed = true;
 }
 
@@ -144,26 +148,35 @@ void setup() {
 void loop() {
 
 	if (button1_pressed) {
-    if (enable_serial){
-		  Serial.printf("Button 1 has been pressed\n");
+    if (millis() - interrupt_time > 200){
+      if (enable_serial){
+        Serial.printf("Button 1 has been pressed\n");
+      }
+      set_temp = set_temp + 1;
+      button1_pressed = false;
+      interrupt_time = millis();
     }
-		set_temp = set_temp + 1;
-    button1_pressed = false;
 	}
 
   if (button2_pressed) {
-    if (enable_serial){
-		  Serial.printf("Button 2 has been pressed\n");
+    if (millis() - interrupt_time > 200){
+      if (enable_serial){
+        Serial.printf("Button 2 has been pressed\n");
+      }
+      button2_pressed = false;
+      interrupt_time = millis();
     }
-		button2_pressed = false;
 	}
 
   if (button3_pressed) {
-    if (enable_serial){
-      Serial.printf("Button 3 has been pressed\n");
+    if (millis() - interrupt_time > 200){
+      if (enable_serial){
+        Serial.printf("Button 3 has been pressed\n");
+      }
+      set_temp = set_temp - 1;
+      button3_pressed = false;
+      interrupt_time = millis();
     }
-    set_temp = set_temp - 1;
-    button3_pressed = false;
 	}
 
   if (enable_serial){
