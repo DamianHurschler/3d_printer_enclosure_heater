@@ -70,13 +70,16 @@ void pid_control(void * arg){
     // Implement check to only start producing output if sensor reading was successful
     measurement = bme.temperature;
     error = set_temp - measurement;
-    if (pwm_output < pwm_output_max){ // Only keep integrating as long as we are below may output, to prevent the integral to go to infinite
+    if (pwm_output < pwm_output_max && pwm_output > pwm_output_min){ // Only keep integrating as long as we are in a sane range - anti-windup
       integral = integral + (error * interval);
     }
     derivative = (error - error_prev) / interval;
     pwm_output = (Kp * error) + (Ki * integral) + (Kd * derivative);
     if (pwm_output > pwm_output_max){ // Clamp to max output
       pwm_output = pwm_output_max;
+    }
+    if (pwm_output < pwm_output_min){ // Clamp to min output
+      pwm_output = pwm_output_min;
     }
     error_prev = error;
     Serial.printf("proportional: %.1f\n", (Kp * error));
