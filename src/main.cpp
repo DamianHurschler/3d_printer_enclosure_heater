@@ -4,6 +4,9 @@
 #include <Adafruit_BME680.h>
 #include <U8g2lib.h>
 
+// Enable serial debugging
+bool enable_serial = true;
+
 // SH1106 LILYGO 1.3" T-Beam OLED display using I2C
 U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE, /* clock=*/ 22, /* data=*/ 23);
 
@@ -60,9 +63,11 @@ void IRAM_ATTR ISR_button3_pressed() {
 
 void setup() {
 
-  // Initialise serial debug interface
-  Wire.begin();
-  Serial.begin(115200);
+  if (enable_serial){
+    // Initialise serial debug interface
+    Wire.begin();
+    Serial.begin(115200);
+  }
 
   // Set the button pins as input with internal pull-up resistors
   pinMode(BUTTON_1_PIN, INPUT_PULLUP);
@@ -71,8 +76,9 @@ void setup() {
 
   // Initialize the BME680 sensor
   if (!bme.begin()) {
+    if (enable_serial){
       Serial.println("Could not find a valid BME680 sensor, check wiring!");
-      while (1);
+    }
   }
 
   // Set up oversampling and filter initialization
@@ -106,39 +112,47 @@ void loop() {
   attachInterrupt(BUTTON_3_PIN, ISR_button3_pressed, FALLING);
 
 	if (button1_pressed) {
-		Serial.printf("Button 1 has been pressed\n");
+    if (enable_serial){
+		  Serial.printf("Button 1 has been pressed\n");
+    }
 		button1_pressed = false;
 	}
 
   if (button2_pressed) {
-		Serial.printf("Button 2 has been pressed\n");
+    if (enable_serial){
+		  Serial.printf("Button 2 has been pressed\n");
+    }
 		button2_pressed = false;
 	}
 
   if (button3_pressed) {
-		Serial.printf("Button 3 has been pressed\n");
-		button3_pressed = false;
+    if (enable_serial){
+      Serial.printf("Button 3 has been pressed\n");
+    }
+    button3_pressed = false;
 	}
 
-  // Read and print temperature
-  Serial.print("Temperature = ");
-  Serial.print(bme.temperature);
-  Serial.println(" *C");
+  if (enable_serial){
+    // Print temperature
+    Serial.print("Temperature = ");
+    Serial.print(bme.temperature);
+    Serial.println(" *C");
 
-  // Read and print humidity
-  Serial.print("Humidity = ");
-  Serial.print(bme.humidity);
-  Serial.println(" %");
+    // Print humidity
+    Serial.print("Humidity = ");
+    Serial.print(bme.humidity);
+    Serial.println(" %");
 
-  // Read and print pressure
-  Serial.print("Pressure = ");
-  Serial.print(bme.pressure / 100.0); // Convert to hPa
-  Serial.println(" hPa");
+    // Print pressure
+    Serial.print("Pressure = ");
+    Serial.print(bme.pressure / 100.0); // Convert to hPa
+    Serial.println(" hPa");
 
-  // Read and print gas resistance
-  Serial.print("Gas Resistance = ");
-  Serial.print(bme.gas_resistance / 1000.0); // Convert to KOhms
-  Serial.println(" KOhms");
+    // Print gas resistance
+    Serial.print("Gas Resistance = ");
+    Serial.print(bme.gas_resistance / 1000.0); // Convert to KOhms
+    Serial.println(" KOhms");
+  }
 
   // Display a message on the OLED
   char message [30];
