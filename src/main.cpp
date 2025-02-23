@@ -53,22 +53,19 @@ void setup() {
   }
 
   // Set up oversampling and filter initialization
-  bme.setTemperatureOversampling(BME680_OS_8X);
-  bme.setHumidityOversampling(BME680_OS_2X);
-  bme.setPressureOversampling(BME680_OS_4X);
+  bme.setTemperatureOversampling(BME680_OS_1X);
+  bme.setHumidityOversampling(BME680_OS_1X);
+  bme.setPressureOversampling(BME680_OS_1X);
   bme.setIIRFilterSize(BME680_FILTER_SIZE_3);
-  bme.setGasHeater(320, 150); // 320*C for 150 ms
-
-  // Give some time for the serial connection to establish
-  delay(1000);
+  bme.setGasHeater(300, 50); // 300*C for 100 ms
 
  // Initialize the SH1106 OLED display
   u8g2.begin();
 
   // Display a welcome message on the OLED
   u8g2.clearBuffer();               // clear the internal memory
-  u8g2.setFont(u8g2_font_ncenB08_tr); // choose a suitable font
-  u8g2.drawStr(0, 10, "Starting...");  // write something to the internal memory
+  u8g2.setFont(u8g2_font_ncenB14_tr); // choose a suitable font
+  u8g2.drawStr(0, 14, "Starting...");  // write something to the internal memory
   u8g2.setContrast(200);  // Maximum contrast
   u8g2.sendBuffer();                // transfer internal memory to the display
 
