@@ -30,6 +30,9 @@ const int pwmChannel = 0;       // PWM channel (0-15)
 const int pwmFrequency = 1000;  // Frequency of PWM signal in Hz
 const int pwmResolution = 8;    // PWM resolution in bits (8 bits gives 256 levels)
 
+
+
+
 // Read data from sensor, and make it available via 'bme' constructor
 void read_sensor(void * arg){
   while(1){
@@ -40,6 +43,31 @@ void read_sensor(void * arg){
     bme.temperature = bme.temperature + temp_offset;
     delay(1000);
   }
+}
+
+
+
+
+void data_to_serial() {
+  // Print temperature
+  Serial.print("Temperature = ");
+  Serial.print(bme.temperature);
+  Serial.println(" *C");
+
+  // Print humidity
+  Serial.print("Humidity = ");
+  Serial.print(bme.humidity);
+  Serial.println(" %");
+
+  // Print pressure
+  Serial.print("Pressure = ");
+  Serial.print(bme.pressure / 100.0); // Convert to hPa
+  Serial.println(" hPa");
+
+  // Print gas resistance
+  Serial.print("Gas Resistance = ");
+  Serial.print(bme.gas_resistance / 1000.0); // Convert to KOhms
+  Serial.println(" KOhms");
 }
 
 
@@ -134,25 +162,7 @@ void loop() {
 	}
 
   if (enable_serial){
-    // Print temperature
-    Serial.print("Temperature = ");
-    Serial.print(bme.temperature);
-    Serial.println(" *C");
-
-    // Print humidity
-    Serial.print("Humidity = ");
-    Serial.print(bme.humidity);
-    Serial.println(" %");
-
-    // Print pressure
-    Serial.print("Pressure = ");
-    Serial.print(bme.pressure / 100.0); // Convert to hPa
-    Serial.println(" hPa");
-
-    // Print gas resistance
-    Serial.print("Gas Resistance = ");
-    Serial.print(bme.gas_resistance / 1000.0); // Convert to KOhms
-    Serial.println(" KOhms");
+    data_to_serial();
   }
 
   // Display a message on the OLED
