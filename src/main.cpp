@@ -236,7 +236,7 @@ void loop() {
   char line2 [16];
   char line3 [16];
   sprintf(line1, "%.1f°C   %.0f %RH", bme.temperature, bme.humidity);
-  sprintf(line2, "set: %u°C", set_temp);
+  sprintf(line2, "set: %d°C", set_temp);
   sprintf(line3, "PWM: %u / 100", pwm_output);
   u8g2.clearBuffer(); // clear the internal memory
   u8g2.drawUTF8(0,12, line1);
