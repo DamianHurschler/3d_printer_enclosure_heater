@@ -126,7 +126,7 @@ void setup() {
 
   // Display a welcome message on the OLED
   u8g2.clearBuffer();               // clear the internal memory
-  u8g2.setFont(u8g2_font_ncenB14_tr); // choose a suitable font
+  u8g2.setFont(u8g2_font_9x15_tf); // choose a suitable font
   u8g2.drawStr(0, 14, "Starting...");  // write something to the internal memory
   u8g2.setContrast(200);  // Maximum contrast
   u8g2.sendBuffer();                // transfer internal memory to the display
@@ -166,11 +166,14 @@ void loop() {
   }
 
   // Display a message on the OLED
-  char message [30];
-  sprintf(message, "%.1f C %.0f RH", bme.temperature, bme.humidity);
+  char line1 [16];
+  char line2 [16];
+  sprintf(line1, "%.1f°C   %.0f %RH", bme.temperature, bme.humidity);
+sprintf(line2, "set: %u°C", set_temp);
   u8g2.clearBuffer(); // clear the internal memory
-  u8g2.setCursor(0,14); // set cursor position
-  u8g2.print(message);
+//   u8g2.setCursor(0,14); // set cursor position
+  u8g2.drawUTF8(0,12, line1);
+  u8g2.drawUTF8(0,30, line2);
   u8g2.sendBuffer(); // transfer internal memory to the display
 
   // Configure the PWM functionalitiy on the specified pin
