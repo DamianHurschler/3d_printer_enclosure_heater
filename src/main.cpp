@@ -20,14 +20,12 @@ bool button2_pressed = false;
 bool button3_pressed = false;
 volatile double interrupt_time = 0;
 
-// Initialise target temperature for temp controller
-int set_temp = 40;
-
 // Create an instance of the BME680 sensor
 Adafruit_BME680 bme; // I2C
 float temp_offset = -3; // Offset to apply to sensor reading to correct temperature.
 
 // Definitions for PID controller
+signed int set_temp = 40;
 float Kp = 2;
 float Ki = 0.1;
 float Kd = 0;
