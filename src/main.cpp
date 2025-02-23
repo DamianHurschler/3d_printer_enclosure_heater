@@ -147,8 +147,8 @@ void loop() {
     if (enable_serial){
 		  Serial.printf("Button 1 has been pressed\n");
     }
-set_temp = set_temp + 1;
-		button1_pressed = false;
+		set_temp = set_temp + 1;
+    button1_pressed = false;
 	}
 
   if (button2_pressed) {
@@ -162,7 +162,7 @@ set_temp = set_temp + 1;
     if (enable_serial){
       Serial.printf("Button 3 has been pressed\n");
     }
-set_temp = set_temp - 1;
+    set_temp = set_temp - 1;
     button3_pressed = false;
 	}
 
@@ -174,7 +174,7 @@ set_temp = set_temp - 1;
   char line1 [16];
   char line2 [16];
   sprintf(line1, "%.1f°C   %.0f %RH", bme.temperature, bme.humidity);
-sprintf(line2, "set: %u°C", set_temp);
+  sprintf(line2, "set: %u°C", set_temp);
   u8g2.clearBuffer(); // clear the internal memory
   u8g2.drawUTF8(0,12, line1);
   u8g2.drawUTF8(0,30, line2);
