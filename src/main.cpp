@@ -27,6 +27,14 @@ int set_temp = 40;
 Adafruit_BME680 bme; // I2C
 float temp_offset = -3; // Offset to apply to sensor reading to correct temperature.
 
+// Definitions for PID controller
+float Kp = 2;
+float Ki = 0.1;
+float instant_error = 0;
+float integrated_error = 0;
+int pwm_output_max = 100;
+int pwm_output = 0;
+
 // Define the GPIO pin to use for PWM output
 const int pwmPin = 15; 
 
@@ -46,6 +54,25 @@ void read_sensor(void * arg){
       Serial.println("Failed to perform reading :(");
     }
     bme.temperature = bme.temperature + temp_offset;
+    delay(1000);
+  }
+}
+
+
+
+
+// Update PID controller numbers and apply change to output
+void pid_control(void * arg){
+  while(1){
+    instant_error = set_temp - bme.temperature;
+    pwm_output = (Kp * instant_error) + (Ki * integrated_error);
+    if (pwm_output > pwm_output_max){ // Clamp to max output - stop windup
+      pwm_output = pwm_output_max;
+    }
+    integrated_error = integrated_error + instant_error;
+    Serial.printf("instant_error: %f\n", instant_error);
+    Serial.printf("integrated_error: %f\n", integrated_error);
+    Serial.printf("pwm_output: %u\n", pwm_output);
     delay(1000);
   }
 }
@@ -141,6 +168,9 @@ void setup() {
  
   // Create independent task which will run continuously 'in the background'
   xTaskCreate(read_sensor, "read_sensor", 4096, NULL, 2, NULL);
+
+  // Create independent task which will run continuously 'in the background'
+  xTaskCreate(pid_control, "pid_control", 4096, NULL, 2, NULL);
 
   // Configure the PWM functionalitiy on the specified pin
   ledcSetup(pwmChannel, pwmFrequency, pwmResolution);
