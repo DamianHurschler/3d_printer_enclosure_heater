@@ -9,6 +9,7 @@ bool enable_serial = true;
 
 // SH1106 LILYGO 1.3" T-Beam OLED display using I2C
 U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE, /* clock=*/ 22, /* data=*/ 23);
+const uint8_t * display_font = u8g2_font_bytesize_tf; // Set display font - https://github.com/olikraus/u8g2/wiki/fntlist12
 
 // T-Beam 1.3 Inch OLED SH1106 Display Buttons
 #define BUTTON_1_PIN 14 //      IO25
@@ -133,7 +134,7 @@ void setup() {
 
   // Display a welcome message on the OLED
   u8g2.clearBuffer();               // clear the internal memory
-  u8g2.setFont(u8g2_font_9x15_tf); // choose a suitable font
+  u8g2.setFont(display_font); // choose a suitable font
   u8g2.drawStr(0, 14, "Starting...");  // write something to the internal memory
   u8g2.setContrast(200);  // Maximum contrast
   u8g2.sendBuffer();                // transfer internal memory to the display
