@@ -35,7 +35,7 @@ void read_sensor(void * arg){
       Serial.println("Failed to perform reading :(");
     }
     bme.temperature = bme.temperature + temp_offset;
-    delay(10000);
+    delay(1000);
   }
 }
 
