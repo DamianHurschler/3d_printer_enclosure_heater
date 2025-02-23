@@ -74,6 +74,11 @@ void setup() {
   pinMode(BUTTON_2_PIN, INPUT_PULLUP);
   pinMode(BUTTON_3_PIN, INPUT_PULLUP);
 
+  // Interrupts for button presses to call Interrupt Service Routines
+  attachInterrupt(BUTTON_1_PIN, ISR_button1_pressed, FALLING);
+  attachInterrupt(BUTTON_2_PIN, ISR_button2_pressed, FALLING);
+  attachInterrupt(BUTTON_3_PIN, ISR_button3_pressed, FALLING);
+
   // Initialize the BME680 sensor
   if (!bme.begin()) {
     if (enable_serial){
@@ -106,10 +111,6 @@ void setup() {
 
 
 void loop() {
-
-  attachInterrupt(BUTTON_1_PIN, ISR_button1_pressed, FALLING);
-  attachInterrupt(BUTTON_2_PIN, ISR_button2_pressed, FALLING);
-  attachInterrupt(BUTTON_3_PIN, ISR_button3_pressed, FALLING);
 
 	if (button1_pressed) {
     if (enable_serial){
