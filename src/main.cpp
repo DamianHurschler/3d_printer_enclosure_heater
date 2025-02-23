@@ -78,7 +78,7 @@ void setup() {
   bme.setHumidityOversampling(BME680_OS_1X);
   bme.setPressureOversampling(BME680_OS_1X);
   bme.setIIRFilterSize(BME680_FILTER_SIZE_3);
-  bme.setGasHeater(300, 50); // 300*C for 100 ms
+  bme.setGasHeater(200, 50); // 200*C for 50 ms
 
  // Initialize the SH1106 OLED display
   u8g2.begin();
