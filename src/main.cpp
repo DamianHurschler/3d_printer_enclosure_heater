@@ -176,7 +176,6 @@ set_temp = set_temp - 1;
   sprintf(line1, "%.1f°C   %.0f %RH", bme.temperature, bme.humidity);
 sprintf(line2, "set: %u°C", set_temp);
   u8g2.clearBuffer(); // clear the internal memory
-//   u8g2.setCursor(0,14); // set cursor position
   u8g2.drawUTF8(0,12, line1);
   u8g2.drawUTF8(0,30, line2);
   u8g2.sendBuffer(); // transfer internal memory to the display
