@@ -30,8 +30,13 @@ float temp_offset = -3; // Offset to apply to sensor reading to correct temperat
 // Definitions for PID controller
 float Kp = 2;
 float Ki = 0.1;
-float instant_error = 0;
-float integrated_error = 0;
+float Kd = 0;
+float measurement = 0;
+float error = 0;
+float error_prev = 0;
+float integral = 0;
+float derivative = 0;
+int interval = 1; //s
 int pwm_output_max = 100;
 int pwm_output = 0;
 
@@ -64,16 +69,23 @@ void read_sensor(void * arg){
 // Update PID controller numbers and apply change to output
 void pid_control(void * arg){
   while(1){
-    instant_error = set_temp - bme.temperature;
-    pwm_output = (Kp * instant_error) + (Ki * integrated_error);
-    if (pwm_output > pwm_output_max){ // Clamp to max output - stop windup
+    // Implement check to only start producing output if sensor reading was successful
+    measurement = bme.temperature;
+    error = set_temp - measurement;
+    if (pwm_output < pwm_output_max){ // Only keep integrating as long as we are below may output, to prevent the integral to go to infinite
+      integral = integral + (error * interval);
+    }
+    derivative = (error - error_prev) / interval;
+    pwm_output = (Kp * error) + (Ki * integral) + (Kd * derivative);
+    if (pwm_output > pwm_output_max){ // Clamp to max output
       pwm_output = pwm_output_max;
     }
-    integrated_error = integrated_error + instant_error;
-    Serial.printf("instant_error: %f\n", instant_error);
-    Serial.printf("integrated_error: %f\n", integrated_error);
+    error_prev = error;
+    Serial.printf("proportional: %.1f\n", (Kp * error));
+    Serial.printf("integral: %.1f\n", (Ki * integral));
+    Serial.printf("derivative: %.1f\n", (Kd * derivative));
     Serial.printf("pwm_output: %u\n", pwm_output);
-    delay(1000);
+    delay((interval * 1000));
   }
 }
 
@@ -224,11 +236,14 @@ void loop() {
   // Display a message on the OLED
   char line1 [16];
   char line2 [16];
+  char line3 [16];
   sprintf(line1, "%.1f°C   %.0f %RH", bme.temperature, bme.humidity);
   sprintf(line2, "set: %u°C", set_temp);
+  sprintf(line3, "PWM: %u / 100", pwm_output);
   u8g2.clearBuffer(); // clear the internal memory
   u8g2.drawUTF8(0,12, line1);
   u8g2.drawUTF8(0,30, line2);
+  u8g2.drawUTF8(0,48, line3);
   u8g2.sendBuffer(); // transfer internal memory to the display
 
   // Set PWM duty cycle to 70%
