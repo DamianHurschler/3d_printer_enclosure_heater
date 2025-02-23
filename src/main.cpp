@@ -141,6 +141,13 @@ void setup() {
  
   // Create independent task which will run continuously 'in the background'
   xTaskCreate(read_sensor, "read_sensor", 4096, NULL, 2, NULL);
+
+  // Configure the PWM functionalitiy on the specified pin
+  ledcSetup(pwmChannel, pwmFrequency, pwmResolution);
+
+  // Attach the PWM channel to the specified GPIO pin
+  ledcAttachPin(pwmPin, pwmChannel);
+
 }
 
 
@@ -193,12 +200,6 @@ void loop() {
   u8g2.drawUTF8(0,12, line1);
   u8g2.drawUTF8(0,30, line2);
   u8g2.sendBuffer(); // transfer internal memory to the display
-
-  // Configure the PWM functionalitiy on the specified pin
-  ledcSetup(pwmChannel, pwmFrequency, pwmResolution);
-
-  // Attach the PWM channel to the specified GPIO pin
-  ledcAttachPin(pwmPin, pwmChannel);
 
   // Set PWM duty cycle to 70%
   int dutyCycle = 178; // 178 (70%) of 255 (8-bit resolution)
