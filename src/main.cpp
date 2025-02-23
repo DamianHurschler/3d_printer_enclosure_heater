@@ -5,7 +5,7 @@
 #include <U8g2lib.h>
 
 // SH1106 LILYGO 1.3" T-Beam OLED display using I2C
-U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE, /* clock=*/ 22, /* data=*/ 21);
+U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE, /* clock=*/ 22, /* data=*/ 23);
 
 // T-Beam 1.3 Inch OLED SH1106 Display Buttons
 #define BUTTON_1_PIN 14 //      IO25
