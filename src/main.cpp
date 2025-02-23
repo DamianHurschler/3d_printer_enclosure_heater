@@ -17,8 +17,6 @@ bool button3_pressed = false;
 
 // Create an instance of the BME680 sensor
 Adafruit_BME680 bme; // I2C
-float bme_temperature;
-int bme_humidity;
 
 // Define the GPIO pin to use for PWM output
 const int pwmPin = 15; 
@@ -27,6 +25,16 @@ const int pwmPin = 15;
 const int pwmChannel = 0;       // PWM channel (0-15)
 const int pwmFrequency = 1000;  // Frequency of PWM signal in Hz
 const int pwmResolution = 8;    // PWM resolution in bits (8 bits gives 256 levels)
+
+void read_sensor(void * arg){
+  while(1){
+    // Perform a measurement and check if it's available
+    if (!bme.performReading()) {
+      Serial.println("Failed to perform reading :(");
+    }
+    delay(1000);
+  }
+}
 
 void setup() {
 
@@ -64,6 +72,8 @@ void setup() {
   u8g2.setContrast(200);  // Maximum contrast
   u8g2.sendBuffer();                // transfer internal memory to the display
 
+xTaskCreate(read_sensor, "read_sensor", 4096, NULL, 2, NULL);
+
 }
 
 void IRAM_ATTR ISR_button1_pressed() {
@@ -99,21 +109,16 @@ void loop() {
 		button3_pressed = false;
 	}
 
-    // Perform a measurement and check if it's available
-  if (!bme.performReading()) {
-      Serial.println("Failed to perform reading :(");
-  }
+    
 
   // Read and print temperature
-  bme_temperature = bme.temperature;
-  Serial.print("Temperature = ");
-  Serial.print(bme_temperature);
+    Serial.print("Temperature = ");
+  Serial.print(bme.temperature);
   Serial.println(" *C");
 
   // Read and print humidity
-  bme_humidity = bme.humidity;
-  Serial.print("Humidity = ");
-  Serial.print(bme_humidity);
+    Serial.print("Humidity = ");
+  Serial.print(bme.humidity);
   Serial.println(" %");
 
   // Read and print pressure
@@ -128,9 +133,9 @@ void loop() {
 
   // Display a message on the OLED
   char message [30];
-  sprintf(message, "Current %.1f C %u RH", bme_temperature, bme_humidity);
+  sprintf(message, "%.1f C %.0f RH", bme.temperature, bme.humidity);
   u8g2.clearBuffer(); // clear the internal memory
-  u8g2.setCursor(0,10); // set cursor position
+  u8g2.setCursor(0,14); // set cursor position
   u8g2.print(message);
   u8g2.sendBuffer(); // transfer internal memory to the display
 
