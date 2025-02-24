@@ -36,6 +36,7 @@ float integral = 0;
 float derivative = 0;
 int interval = 1; //s
 int pwm_output_max = 100;
+float pwm_output_min = 0;
 int pwm_output = 0;
 
 // Define the GPIO pin to use for PWM output
