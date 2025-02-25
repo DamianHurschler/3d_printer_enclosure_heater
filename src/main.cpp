@@ -3,6 +3,7 @@
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BME680.h>
 #include <U8g2lib.h>
+#include <math.h>
 
 // Enable serial debugging
 bool enable_serial = true;
@@ -44,12 +45,10 @@ int pwm_output_max = 100;
 int pwm_output_min = 0;
 int pwm_output = 0;
 
-// Define the GPIO pin to use for PWM output
-const int pwmPin = 15; 
-
 // Define PWM parameters
+const int pwmPin = 15; 
 const int pwmChannel = 0;       // PWM channel (0-15)
-const int pwmFrequency = 1000;  // Frequency of PWM signal in Hz
+const int pwmFrequency = 4;  // Frequency of PWM signal in Hz, minimum is 4
 const int pwmResolution = 8;    // PWM resolution in bits (8 bits gives 256 levels)
 
 
@@ -197,10 +196,8 @@ void setup() {
   // Create independent task which will run continuously 'in the background'
   xTaskCreate(pid_control, "pid_control", 4096, NULL, 2, NULL);
 
-  // Configure the PWM functionalitiy on the specified pin
+  // Configure PWM pin
   ledcSetup(pwmChannel, pwmFrequency, pwmResolution);
-
-  // Attach the PWM channel to the specified GPIO pin
   ledcAttachPin(pwmPin, pwmChannel);
 
 }
@@ -259,9 +256,14 @@ void loop() {
   u8g2.drawUTF8(0,48, line3);
   u8g2.sendBuffer(); // transfer internal memory to the display
 
-  // Set PWM duty cycle to 70%
-  int dutyCycle = 178; // 178 (70%) of 255 (8-bit resolution)
-
-  // Write the PWM duty cycle to the pin
-  ledcWrite(pwmChannel, dutyCycle);
+  // Set PWM duty cycle
+  // Calculate resolution based on 'pwmResolution' and scale it to 100% duty cycle
+  // Example: 8bit res has 2pow8-1, i.e. 255 steps of resolution to cover 0-100% duty cycle
+  float pwm_scaling_factor = (pow(2, pwmResolution) -1) / 100;
+  int dutyCycle_bin = pwm_scaling_factor * pwm_output;
+  if (enable_serial){
+    // Serial.printf("pwm_scaling_factor: %.2f\n", pwm_scaling_factor);
+    Serial.printf("dutyCycle_bin: %u\n", dutyCycle_bin);
+  }
+  ledcWrite(pwmChannel, dutyCycle_bin); // Write to PWM pin
 }
