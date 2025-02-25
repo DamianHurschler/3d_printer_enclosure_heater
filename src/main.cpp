@@ -6,7 +6,7 @@
 #include <math.h>
 
 // Enable serial debugging
-bool enable_serial = false;
+bool enable_serial = true;
 
 // SH1106 LILYGO 1.3" T-Beam OLED display using I2C
 U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE, /* clock=*/ 22, /* data=*/ 23);
@@ -27,9 +27,9 @@ Adafruit_BME680 bme; // I2C
 float temp_offset = -3; // Offset to apply to sensor reading to correct temperature.
 
 // Definitions for PID controller
-signed int set_temp = 30;
-float Kp = 10.0f;
-float Ki = 0.1f;
+signed int set_temp = 40;
+float Kp = 40.0f;
+float Ki = 0.2f;
 float Kd = 0.1f;
 float measurement = 0.0f;
 float measurement_prev = 0.0f;
@@ -37,7 +37,7 @@ float error = 0.0f;
 float error_prev = 0.0f;
 float proportional = 0.0f;
 float integral = 0.0f;
-float integral_max = 100.0f;
+float integral_max = 50.0f;
 float integral_min = 0.0f;
 float derivative = 0.0f;
 int interval = 1; //s
@@ -266,4 +266,6 @@ void loop() {
     Serial.printf("dutyCycle_bin: %u\n", dutyCycle_bin);
   }
   ledcWrite(pwmChannel, dutyCycle_bin); // Write to PWM pin
+
+  delay(1000);
 }
