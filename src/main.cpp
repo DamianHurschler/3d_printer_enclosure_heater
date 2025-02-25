@@ -26,14 +26,16 @@ Adafruit_BME680 bme; // I2C
 float temp_offset = -3; // Offset to apply to sensor reading to correct temperature.
 
 // Definitions for PID controller
-signed int set_temp = 40;
+signed int set_temp = 30;
 float Kp = 2;
-float Ki = 0.1;
+float Ki = 0.5;
 float Kd = 0;
 float measurement = 0;
 float error = 0;
 float error_prev = 0;
 float integral = 0;
+float integral_max = 100;
+float integral_min = 0;
 float derivative = 0;
 int interval = 1; //s
 int pwm_output_max = 100;
@@ -74,11 +76,14 @@ void pid_control(void * arg){
     // Implement check to only start producing output if sensor reading was successful
     measurement = bme.temperature;
     error = set_temp - measurement;
-    if (pwm_output < pwm_output_max && pwm_output > pwm_output_min){ // Only keep integrating as long as we are in a sane range - anti-windup
-      integral = integral + (error * interval);
+    integral = integral + 0.5f * Ki * interval * (error + error_prev);
+    if (integral > integral_max) {
+      integral = integral_max;
+    } else if (integral < integral_min) {
+      integral =integral_min;
     }
     derivative = (error - error_prev) / interval;
-    pwm_output = (Kp * error) + (Ki * integral) + (Kd * derivative);
+    pwm_output = (Kp * error) + (integral) + (Kd * derivative);
     if (pwm_output > pwm_output_max){ // Clamp to max output
       pwm_output = pwm_output_max;
     }
@@ -87,7 +92,7 @@ void pid_control(void * arg){
     }
     error_prev = error;
     Serial.printf("proportional: %.1f\n", (Kp * error));
-    Serial.printf("integral: %.1f\n", (Ki * integral));
+    Serial.printf("integral: %.1f\n", (integral));
     Serial.printf("derivative: %.1f\n", (Kd * derivative));
     Serial.printf("pwm_output: %u\n", pwm_output);
     delay((interval * 1000));
