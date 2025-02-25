@@ -95,10 +95,12 @@ void pid_control(void * arg){
     }
     error_prev = error;
     measurement_prev = measurement;
-    Serial.printf("proportional: %.1f\n", proportional);
-    Serial.printf("integral: %.1f\n", integral);
-    Serial.printf("derivative: %.1f\n", derivative);
-    Serial.printf("pwm_output: %u\n", pwm_output);
+    if (enable_serial) {
+      Serial.printf("proportional: %.1f\n", proportional);
+      Serial.printf("integral: %.1f\n", integral);
+      Serial.printf("derivative: %.1f\n", derivative);
+      Serial.printf("pwm_output: %u\n", pwm_output);
+    }
     delay((interval * 1000));
   }
 }
