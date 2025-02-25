@@ -34,6 +34,7 @@ float measurement = 0.0f;
 float measurement_prev = 0.0f;
 float error = 0.0f;
 float error_prev = 0.0f;
+float proportional = 0.0f;
 float integral = 0.0f;
 float integral_max = 100.0f;
 float integral_min = 0.0f;
@@ -77,6 +78,7 @@ void pid_control(void * arg){
     // Implement check to only start producing output if sensor reading was successful
     measurement = bme.temperature;
     error = set_temp - measurement;
+    proportional = Kp * error;
     integral = integral + 0.5f * Ki * interval * (error + error_prev);
     if (integral > integral_max) {
       integral = integral_max;
@@ -84,7 +86,7 @@ void pid_control(void * arg){
       integral =integral_min;
     }
     derivative = - (Kd * (measurement - measurement_prev) / interval);
-    pwm_output = (Kp * error) + (integral) + derivative;
+    pwm_output = proportional + integral + derivative;
     if (pwm_output > pwm_output_max){ // Clamp to max output
       pwm_output = pwm_output_max;
     }
@@ -93,9 +95,9 @@ void pid_control(void * arg){
     }
     error_prev = error;
     measurement_prev = measurement;
-    Serial.printf("proportional: %.1f\n", (Kp * error));
-    Serial.printf("integral: %.1f\n", (integral));
-    Serial.printf("derivative: %.1f\n", (derivative));
+    Serial.printf("proportional: %.1f\n", proportional);
+    Serial.printf("integral: %.1f\n", integral);
+    Serial.printf("derivative: %.1f\n", derivative);
     Serial.printf("pwm_output: %u\n", pwm_output);
     delay((interval * 1000));
   }
