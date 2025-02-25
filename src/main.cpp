@@ -6,11 +6,11 @@
 #include <math.h>
 
 // Enable serial debugging
-bool enable_serial = true;
+bool enable_serial = false;
 
 // SH1106 LILYGO 1.3" T-Beam OLED display using I2C
 U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE, /* clock=*/ 22, /* data=*/ 23);
-const uint8_t * display_font = u8g2_font_bytesize_tf; // Set display font - https://github.com/olikraus/u8g2/wiki/fntlist12
+const uint8_t * display_font = u8g2_font_logisoso16_tf; // Set display font - https://github.com/olikraus/u8g2/wiki/fntlist12
 
 // T-Beam 1.3 Inch OLED SH1106 Display Buttons
 #define BUTTON_1_PIN 14 //      IO25
@@ -247,13 +247,13 @@ void loop() {
   char line1 [16];
   char line2 [16];
   char line3 [16];
-  sprintf(line1, "%.1f°C   %.0f %RH", bme.temperature, bme.humidity);
+  sprintf(line1, "%.1f°C  %.0f %RH", bme.temperature, bme.humidity);
   sprintf(line2, "set: %d°C", set_temp);
-  sprintf(line3, "PWM: %u / 100", pwm_output);
+  sprintf(line3, "PWM: %u", pwm_output);
   u8g2.clearBuffer(); // clear the internal memory
-  u8g2.drawUTF8(0,12, line1);
-  u8g2.drawUTF8(0,30, line2);
-  u8g2.drawUTF8(0,48, line3);
+  u8g2.drawUTF8(0,18, line1);
+  u8g2.drawUTF8(0,41, line2);
+  u8g2.drawUTF8(0,64, line3);
   u8g2.sendBuffer(); // transfer internal memory to the display
 
   // Set PWM duty cycle
