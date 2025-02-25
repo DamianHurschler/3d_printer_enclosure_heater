@@ -27,19 +27,20 @@ float temp_offset = -3; // Offset to apply to sensor reading to correct temperat
 
 // Definitions for PID controller
 signed int set_temp = 30;
-float Kp = 2;
-float Ki = 0.5;
-float Kd = 0;
-float measurement = 0;
-float error = 0;
-float error_prev = 0;
-float integral = 0;
-float integral_max = 100;
-float integral_min = 0;
-float derivative = 0;
+float Kp = 2.0f;
+float Ki = 0.5f;
+float Kd = 0.2f;
+float measurement = 0.0f;
+float measurement_prev = 0.0f;
+float error = 0.0f;
+float error_prev = 0.0f;
+float integral = 0.0f;
+float integral_max = 100.0f;
+float integral_min = 0.0f;
+float derivative = 0.0f;
 int interval = 1; //s
 int pwm_output_max = 100;
-float pwm_output_min = 0;
+float pwm_output_min = 0.0f;
 int pwm_output = 0;
 
 // Define the GPIO pin to use for PWM output
@@ -82,8 +83,8 @@ void pid_control(void * arg){
     } else if (integral < integral_min) {
       integral =integral_min;
     }
-    derivative = (error - error_prev) / interval;
-    pwm_output = (Kp * error) + (integral) + (Kd * derivative);
+    derivative = - (Kd * (measurement - measurement_prev) / interval);
+    pwm_output = (Kp * error) + (integral) + derivative;
     if (pwm_output > pwm_output_max){ // Clamp to max output
       pwm_output = pwm_output_max;
     }
@@ -91,9 +92,10 @@ void pid_control(void * arg){
       pwm_output = pwm_output_min;
     }
     error_prev = error;
+    measurement_prev = measurement;
     Serial.printf("proportional: %.1f\n", (Kp * error));
     Serial.printf("integral: %.1f\n", (integral));
-    Serial.printf("derivative: %.1f\n", (Kd * derivative));
+    Serial.printf("derivative: %.1f\n", (derivative));
     Serial.printf("pwm_output: %u\n", pwm_output);
     delay((interval * 1000));
   }
