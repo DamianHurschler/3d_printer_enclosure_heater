@@ -28,9 +28,9 @@ float temp_offset = -3; // Offset to apply to sensor reading to correct temperat
 
 // Definitions for PID controller
 signed int set_temp = 30;
-float Kp = 2.0f;
-float Ki = 0.5f;
-float Kd = 0.2f;
+float Kp = 10.0f;
+float Ki = 0.1f;
+float Kd = 0.1f;
 float measurement = 0.0f;
 float measurement_prev = 0.0f;
 float error = 0.0f;
