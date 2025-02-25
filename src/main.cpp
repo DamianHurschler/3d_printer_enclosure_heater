@@ -55,7 +55,9 @@ void read_sensor(void * arg){
   while(1){
     // Perform a measurement and confirm it's available
     if (!bme.performReading()) {
+      if (enable_serial){
       Serial.println("Failed to perform reading :(");
+      }
     }
     bme.temperature = bme.temperature + temp_offset;
     delay(1000);
