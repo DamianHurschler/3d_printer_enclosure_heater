@@ -18,7 +18,8 @@ const uint8_t * display_font = u8g2_font_bytesize_tf; // Set display font - http
 bool button1_pressed = false;
 bool button2_pressed = false;
 bool button3_pressed = false;
-volatile double interrupt_time = 0;
+int button_debounce = 300;
+volatile double last_interrupt_time = 0;
 
 // Create an instance of the BME680 sensor
 Adafruit_BME680 bme; // I2C
@@ -123,17 +124,14 @@ void data_to_serial() {
 
 // Interrupt functions to handle button presses
 void IRAM_ATTR ISR_button1_pressed() {
-  interrupt_time = millis();
 	button1_pressed = true;
 }
 
 void IRAM_ATTR ISR_button2_pressed() {
-  interrupt_time = millis();
 	button2_pressed = true;
 }
 
 void IRAM_ATTR ISR_button3_pressed() {
-  interrupt_time = millis();
 	button3_pressed = true;
 }
 
@@ -202,35 +200,35 @@ void setup() {
 void loop() {
 
 	if (button1_pressed) {
-    if (millis() - interrupt_time > 200){
+    if ((millis() - last_interrupt_time) > button_debounce){
       if (enable_serial){
         Serial.printf("Button 1 has been pressed\n");
       }
       set_temp = set_temp + 1;
-      button1_pressed = false;
-      interrupt_time = millis();
+      last_interrupt_time = millis();
     }
+    button1_pressed = false;
 	}
 
   if (button2_pressed) {
-    if (millis() - interrupt_time > 200){
+    if ((millis() - last_interrupt_time) > button_debounce){
       if (enable_serial){
         Serial.printf("Button 2 has been pressed\n");
       }
-      button2_pressed = false;
-      interrupt_time = millis();
+      last_interrupt_time = millis();
     }
+    button2_pressed = false;
 	}
 
   if (button3_pressed) {
-    if (millis() - interrupt_time > 200){
+    if ((millis() - last_interrupt_time) > button_debounce){
       if (enable_serial){
         Serial.printf("Button 3 has been pressed\n");
       }
       set_temp = set_temp - 1;
-      button3_pressed = false;
-      interrupt_time = millis();
+      last_interrupt_time = millis();
     }
+    button3_pressed = false;
 	}
 
   if (enable_serial){
