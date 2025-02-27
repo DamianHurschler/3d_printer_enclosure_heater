@@ -37,7 +37,7 @@ float error = 0.0f;
 float error_prev = 0.0f;
 float proportional = 0.0f;
 float integral = 0.0f;
-float integral_max = 50.0f;
+float integral_max = 70.0f;
 float integral_min = 0.0f;
 float derivative = 0.0f;
 int interval = 1; //s
@@ -266,6 +266,4 @@ void loop() {
     Serial.printf("dutyCycle_bin: %u\n", dutyCycle_bin);
   }
   ledcWrite(pwmChannel, dutyCycle_bin); // Write to PWM pin
-
-  delay(1000);
 }
