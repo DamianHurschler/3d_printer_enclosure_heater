@@ -27,7 +27,7 @@ Adafruit_BME680 bme; // I2C
 float temp_offset = -3; // Offset to apply to sensor reading to correct temperature.
 
 // Definitions for PID controller
-signed int set_temp = 40;
+signed int set_temp = 25;
 float Kp = 40.0f;
 float Ki = 0.2f;
 float Kd = 0.1f;
