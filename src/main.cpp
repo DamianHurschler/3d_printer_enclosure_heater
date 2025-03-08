@@ -44,8 +44,8 @@ int pwm_output = 0;
 
 // Define PWM parameters
 bool pwm_enable = false;
-char output_state [4] = "OFF";          // String with 3 characters (plus one null character) to display ON or OFF
-const int pwmPin = 15; 
+char output_state [4] = "OFF";  // String with 3 characters (plus one null character) to display ON or OFF
+const int pwmPin = 15;          // PWM output pin number
 const int pwmChannel = 0;       // PWM channel (0-15)
 const int pwmFrequency = 4;     // Frequency of PWM signal in Hz, minimum is 4
 const int pwmResolution = 8;    // PWM resolution in bits (8 bits gives 256 levels)
@@ -67,7 +67,7 @@ void read_sensor(){
 
 
 
-// Update PID controller numbers and apply change to output
+// Update PID controller numbers
 void pid_control(){
     // Implement check to only start producing output if sensor reading was successful
     measurement = bme.temperature;
@@ -89,6 +89,22 @@ void pid_control(){
     }
     error_prev = error;
     measurement_prev = measurement;
+}
+
+
+
+
+void set_output(){
+  // Set PWM duty cycle
+  // Calculate resolution based on 'pwmResolution' and scale it to 100% duty cycle
+  // Example: 8bit res has 2pow8-1, i.e. 255 steps of resolution to cover 0-100% duty cycle
+  if (!pwm_enable) {
+    pwm_output = 0;
+  } 
+  pwm_scaling_factor = (pow(2, pwmResolution) -1) / 100;
+  dutyCycle_bin = pwm_scaling_factor * pwm_output;
+  ledcWrite(pwmChannel, dutyCycle_bin); // Write to PWM pin
+
 }
 
 
@@ -137,15 +153,7 @@ void once_per_second(void * arg){
 
     pid_control();
 
-    // Set PWM duty cycle
-    // Calculate resolution based on 'pwmResolution' and scale it to 100% duty cycle
-    // Example: 8bit res has 2pow8-1, i.e. 255 steps of resolution to cover 0-100% duty cycle
-    if (!pwm_enable) {
-      pwm_output = 0;
-    } 
-    pwm_scaling_factor = (pow(2, pwmResolution) -1) / 100;
-    dutyCycle_bin = pwm_scaling_factor * pwm_output;
-    ledcWrite(pwmChannel, dutyCycle_bin); // Write to PWM pin
+    set_output();
 
     serial_print();
 
