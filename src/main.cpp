@@ -55,8 +55,7 @@ const int pwmResolution = 8;    // PWM resolution in bits (8 bits gives 256 leve
 
 
 // Read data from sensor, and make it available via 'bme' constructor
-void read_sensor(void * arg){
-  while(1){
+void read_sensor(){
     // Perform a measurement and confirm it's available
     if (!bme.performReading()) {
       if (enable_serial){
@@ -64,16 +63,13 @@ void read_sensor(void * arg){
       }
     }
     bme.temperature = bme.temperature + temp_offset;
-    delay(1000);
-  }
 }
 
 
 
 
 // Update PID controller numbers and apply change to output
-void pid_control(void * arg){
-  while(1){
+void pid_control(){
     // Implement check to only start producing output if sensor reading was successful
     measurement = bme.temperature;
     error = set_temp - measurement;
@@ -96,15 +92,12 @@ void pid_control(void * arg){
     measurement_prev = measurement;
     if (enable_serial) {
     }
-    delay((interval * 1000));
-  }
 }
 
 
 
 
-void serial_print(void * arg){
-  while(1){
+void serial_print(){
   // Print temperature
   Serial.print("Temperature = ");
   Serial.print(bme.temperature);
@@ -130,8 +123,31 @@ void serial_print(void * arg){
   Serial.printf("integral: %.1f\n", integral);
   Serial.printf("derivative: %.1f\n", derivative);
   Serial.printf("pwm_output: %u\n", pwm_output);
+}
 
-  delay(1000);
+
+
+
+void once_per_second(void * arg){
+  while(1){
+    read_sensor();
+
+    pid_control();
+
+    // Set PWM duty cycle
+    // Calculate resolution based on 'pwmResolution' and scale it to 100% duty cycle
+    // Example: 8bit res has 2pow8-1, i.e. 255 steps of resolution to cover 0-100% duty cycle
+    float pwm_scaling_factor = (pow(2, pwmResolution) -1) / 100;
+    int dutyCycle_bin = pwm_scaling_factor * pwm_output;
+    if (enable_serial){
+      // Serial.printf("pwm_scaling_factor: %.2f\n", pwm_scaling_factor);
+      // Serial.printf("dutyCycle_bin: %u\n", dutyCycle_bin);
+    }
+    ledcWrite(pwmChannel, dutyCycle_bin); // Write to PWM pin
+
+    serial_print();
+
+    delay(1000);
   }
 }
 
@@ -197,14 +213,11 @@ void setup() {
   u8g2.sendBuffer();                // transfer internal memory to the display
  
   // Create independent task which will run continuously 'in the background'
-  xTaskCreate(read_sensor, "read_sensor", 4096, NULL, 2, NULL);
-  xTaskCreate(pid_control, "pid_control", 4096, NULL, 2, NULL);
-  xTaskCreate(serial_print, "serial_print", 4096, NULL, 2, NULL);
+  xTaskCreate(once_per_second, "once_per_second", 4096, NULL, 2, NULL);
 
   // Configure PWM pin
   ledcSetup(pwmChannel, pwmFrequency, pwmResolution);
   ledcAttachPin(pwmPin, pwmChannel);
-
 }
 
 
@@ -256,15 +269,4 @@ void loop() {
   u8g2.drawUTF8(0,41, line2);
   u8g2.drawUTF8(0,64, line3);
   u8g2.sendBuffer(); // transfer internal memory to the display
-
-  // Set PWM duty cycle
-  // Calculate resolution based on 'pwmResolution' and scale it to 100% duty cycle
-  // Example: 8bit res has 2pow8-1, i.e. 255 steps of resolution to cover 0-100% duty cycle
-  float pwm_scaling_factor = (pow(2, pwmResolution) -1) / 100;
-  int dutyCycle_bin = pwm_scaling_factor * pwm_output;
-  if (enable_serial){
-    // Serial.printf("pwm_scaling_factor: %.2f\n", pwm_scaling_factor);
-    // Serial.printf("dutyCycle_bin: %u\n", dutyCycle_bin);
-  }
-  ledcWrite(pwmChannel, dutyCycle_bin); // Write to PWM pin
 }
