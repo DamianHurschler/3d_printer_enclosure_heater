@@ -24,23 +24,23 @@ Adafruit_BME680 bme; // I2C
 float temp_offset = -3; // Offset to apply to sensor reading to correct temperature.
 
 // Definitions for PID controller
-signed int set_temp = 25;
-float Kp = 40.0f;
-float Ki = 0.2f;
-float Kd = 0.1f;
-float measurement = 0.0f;
-float measurement_prev = 0.0f;
-float error = 0.0f;
-float error_prev = 0.0f;
-float proportional = 0.0f;
-float integral = 0.0f;
-float integral_max = 70.0f;
-float integral_min = 0.0f;
-float derivative = 0.0f;
-int interval = 1; //s
-int pwm_output_max = 100;
-int pwm_output_min = 0;
-int pwm_output = 0;
+signed int set_temp = 25;       // Initial set point of PID controller
+float Kp = 40.0f;               // Proportional gain
+float Ki = 0.2f;                // Integrator gain
+float Kd = 0.1f;                // Derivative gain
+float measurement = 0.0f;       // Measurement variable
+float measurement_prev = 0.0f;  // Mesurement of previous control loop cycle
+float error = 0.0f;             // Error value, difference between set point and measurement
+float error_prev = 0.0f;        // Error value of previous control loop cycle
+float proportional = 0.0f;      // Proportional part of PID output
+float integral = 0.0f;          // Integral part of PID output
+float integral_max = 70.0f;     // Clamping of max allowable integral part - prevents windup and integral overshoot
+float integral_min = 0.0f;      // Clamping of min allowable integral part
+float derivative = 0.0f;        // Derivative part of PID output
+int interval = 1; //s           // PID loop update interval
+int pwm_output_max = 100;       // Max allowable PID control output value
+int pwm_output_min = 0;         // Min allowable PID control output value
+int pwm_output = 0;             // Initial PID output
 
 // Define PWM parameters
 bool pwm_enable = false;
@@ -67,7 +67,6 @@ void read_sensor(){
 
 
 
-// Update PID controller numbers
 void pid_control(){
     // Implement check to only start producing output if sensor reading was successful
     measurement = bme.temperature;
@@ -147,17 +146,21 @@ void serial_print(){
 
 
 void update_display(){
-  // Display a message on the OLED
+  // Initialise variables for display test lines and parts of lines
   char line1 [16];
   char line2 [16];
   char line3_1 [16];
   char line3_2 [16];
   char line3_3 [16];
+
+  // Convert data and text and store it in variables
   sprintf(line1, "%.1f°C  %.0f %RH", bme.temperature, bme.humidity);
   sprintf(line2, "SET %d°C", set_temp);
   sprintf(line3_1, "PWM %u", pwm_output);
   sprintf(line3_2, "%%");
   sprintf(line3_3, "%s", output_state);
+
+  // Send text lines to display
   u8g2.clearBuffer(); // clear the internal memory
   u8g2.drawUTF8(0,18, line1);
   u8g2.drawUTF8(0,41, line2);
@@ -171,6 +174,7 @@ void update_display(){
 
 
 void once_per_second(void * arg){
+  // Execute this loop once per second, independent of main loop
   while(1){
     read_sensor();
 
@@ -234,19 +238,19 @@ void setup() {
  // Initialize the SH1106 OLED display
   u8g2.begin();
 
-  // Display a welcome message on the OLED
+  // Configure display and send start message to the OLED
   u8g2.clearBuffer();               // clear the internal memory
   u8g2.setFont(display_font); // choose a suitable font
   u8g2.drawStr(0, 14, "Starting...");  // write something to the internal memory
   u8g2.setContrast(200);  // Maximum contrast
   u8g2.sendBuffer();                // transfer internal memory to the display
- 
-  // Create independent task which will run continuously 'in the background'
-  xTaskCreate(once_per_second, "once_per_second", 4096, NULL, 2, NULL);
 
   // Configure PWM pin
   ledcSetup(pwmChannel, pwmFrequency, pwmResolution);
   ledcAttachPin(pwmPin, pwmChannel);
+
+  // Create independent task which will run continuously 'in the background'
+  xTaskCreate(once_per_second, "once_per_second", 4096, NULL, 2, NULL);
 }
 
 
