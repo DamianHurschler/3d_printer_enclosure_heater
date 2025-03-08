@@ -95,10 +95,6 @@ void pid_control(void * arg){
     error_prev = error;
     measurement_prev = measurement;
     if (enable_serial) {
-      Serial.printf("proportional: %.1f\n", proportional);
-      Serial.printf("integral: %.1f\n", integral);
-      Serial.printf("derivative: %.1f\n", derivative);
-      Serial.printf("pwm_output: %u\n", pwm_output);
     }
     delay((interval * 1000));
   }
@@ -107,7 +103,8 @@ void pid_control(void * arg){
 
 
 
-void data_to_serial() {
+void serial_print(void * arg){
+  while(1){
   // Print temperature
   Serial.print("Temperature = ");
   Serial.print(bme.temperature);
@@ -127,6 +124,15 @@ void data_to_serial() {
   Serial.print("Gas Resistance = ");
   Serial.print(bme.gas_resistance / 1000.0); // Convert to KOhms
   Serial.println(" KOhms");
+
+  // Print PID variables
+  Serial.printf("proportional: %.1f\n", proportional);
+  Serial.printf("integral: %.1f\n", integral);
+  Serial.printf("derivative: %.1f\n", derivative);
+  Serial.printf("pwm_output: %u\n", pwm_output);
+
+  delay(1000);
+  }
 }
 
 
@@ -192,9 +198,8 @@ void setup() {
  
   // Create independent task which will run continuously 'in the background'
   xTaskCreate(read_sensor, "read_sensor", 4096, NULL, 2, NULL);
-
-  // Create independent task which will run continuously 'in the background'
   xTaskCreate(pid_control, "pid_control", 4096, NULL, 2, NULL);
+  xTaskCreate(serial_print, "serial_print", 4096, NULL, 2, NULL);
 
   // Configure PWM pin
   ledcSetup(pwmChannel, pwmFrequency, pwmResolution);
@@ -239,10 +244,6 @@ void loop() {
     button3_pressed = false;
 	}
 
-  if (enable_serial){
-    data_to_serial();
-  }
-
   // Display a message on the OLED
   char line1 [16];
   char line2 [16];
@@ -263,7 +264,7 @@ void loop() {
   int dutyCycle_bin = pwm_scaling_factor * pwm_output;
   if (enable_serial){
     // Serial.printf("pwm_scaling_factor: %.2f\n", pwm_scaling_factor);
-    Serial.printf("dutyCycle_bin: %u\n", dutyCycle_bin);
+    // Serial.printf("dutyCycle_bin: %u\n", dutyCycle_bin);
   }
   ledcWrite(pwmChannel, dutyCycle_bin); // Write to PWM pin
 }
