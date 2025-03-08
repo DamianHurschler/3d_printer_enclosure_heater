@@ -14,7 +14,7 @@ const uint8_t * display_font = u8g2_font_logisoso16_tf; // Set display font - ht
 #define BUTTON_2_PIN 27 // (A0) IO39
 #define BUTTON_3_PIN 26 //      IO36
 bool button1_pressed = false;
-bool button2_pressed = false;
+bool button_enable_pressed = false;
 bool button3_pressed = false;
 int button_debounce = 300;
 volatile double last_interrupt_time = 0;
@@ -43,6 +43,8 @@ int pwm_output_min = 0;
 int pwm_output = 0;
 
 // Define PWM parameters
+bool pwm_enable = false;
+char output_state [4] = "OFF";          // String with 3 characters (plus one null character) to display ON or OFF
 const int pwmPin = 15; 
 const int pwmChannel = 0;       // PWM channel (0-15)
 const int pwmFrequency = 4;     // Frequency of PWM signal in Hz, minimum is 4
@@ -121,6 +123,8 @@ void serial_print(){
 
   // Print PWM output variables
   Serial.printf("pwm_scaling_factor: %.2f\n", pwm_scaling_factor);
+  Serial.printf("pwm_enable: %s\n", pwm_enable ? "true" : "false");
+  Serial.printf("output_state: %s\n", output_state);
   Serial.printf("dutyCycle_bin: %u\n", dutyCycle_bin);
 }
 
@@ -136,6 +140,9 @@ void once_per_second(void * arg){
     // Set PWM duty cycle
     // Calculate resolution based on 'pwmResolution' and scale it to 100% duty cycle
     // Example: 8bit res has 2pow8-1, i.e. 255 steps of resolution to cover 0-100% duty cycle
+    if (!pwm_enable) {
+      pwm_output = 0;
+    } 
     pwm_scaling_factor = (pow(2, pwmResolution) -1) / 100;
     dutyCycle_bin = pwm_scaling_factor * pwm_output;
     ledcWrite(pwmChannel, dutyCycle_bin); // Write to PWM pin
@@ -154,8 +161,8 @@ void IRAM_ATTR ISR_button1_pressed() {
 	button1_pressed = true;
 }
 
-void IRAM_ATTR ISR_button2_pressed() {
-	button2_pressed = true;
+void IRAM_ATTR ISR_button_enable_pressed() {
+	button_enable_pressed = true;
 }
 
 void IRAM_ATTR ISR_button3_pressed() {
@@ -178,7 +185,7 @@ void setup() {
 
   // Interrupts for button presses to call Interrupt Service Routines
   attachInterrupt(BUTTON_1_PIN, ISR_button1_pressed, FALLING);
-  attachInterrupt(BUTTON_2_PIN, ISR_button2_pressed, FALLING);
+  attachInterrupt(BUTTON_2_PIN, ISR_button_enable_pressed, FALLING);
   attachInterrupt(BUTTON_3_PIN, ISR_button3_pressed, FALLING);
 
   // Initialize the BME680 sensor
@@ -225,12 +232,19 @@ void loop() {
     button1_pressed = false;
 	}
 
-  if (button2_pressed) {
+  if (button_enable_pressed) {
     if ((millis() - last_interrupt_time) > button_debounce){
-      Serial.printf("Button 2 has been pressed\n");
+      Serial.printf("Enable button has been pressed\n");
+      if (pwm_enable){
+        pwm_enable = false;
+        sprintf(output_state, "OFF");
+      } else {
+        pwm_enable = true;
+        sprintf(output_state, "ON");
+      }
       last_interrupt_time = millis();
     }
-    button2_pressed = false;
+    button_enable_pressed = false;
 	}
 
   if (button3_pressed) {
@@ -245,13 +259,19 @@ void loop() {
   // Display a message on the OLED
   char line1 [16];
   char line2 [16];
-  char line3 [16];
+  char line3_1 [16];
+  char line3_2 [16];
+  char line3_3 [16];
   sprintf(line1, "%.1f°C  %.0f %RH", bme.temperature, bme.humidity);
-  sprintf(line2, "set: %d°C", set_temp);
-  sprintf(line3, "PWM: %u", pwm_output);
+  sprintf(line2, "SET %d°C", set_temp);
+  sprintf(line3_1, "PWM %u", pwm_output);
+  sprintf(line3_2, "%%");
+  sprintf(line3_3, "%s", output_state);
   u8g2.clearBuffer(); // clear the internal memory
   u8g2.drawUTF8(0,18, line1);
   u8g2.drawUTF8(0,41, line2);
-  u8g2.drawUTF8(0,64, line3);
+  u8g2.drawUTF8(0,64, line3_1);
+  u8g2.drawUTF8(70,64, line3_2);
+  u8g2.drawUTF8(100,64, line3_3);
   u8g2.sendBuffer(); // transfer internal memory to the display
 }
