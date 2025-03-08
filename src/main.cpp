@@ -104,7 +104,6 @@ void set_output(){
   pwm_scaling_factor = (pow(2, pwmResolution) -1) / 100;
   dutyCycle_bin = pwm_scaling_factor * pwm_output;
   ledcWrite(pwmChannel, dutyCycle_bin); // Write to PWM pin
-
 }
 
 
@@ -142,6 +141,30 @@ void serial_print(){
   Serial.printf("pwm_enable: %s\n", pwm_enable ? "true" : "false");
   Serial.printf("output_state: %s\n", output_state);
   Serial.printf("dutyCycle_bin: %u\n", dutyCycle_bin);
+}
+
+
+
+
+void update_display(){
+  // Display a message on the OLED
+  char line1 [16];
+  char line2 [16];
+  char line3_1 [16];
+  char line3_2 [16];
+  char line3_3 [16];
+  sprintf(line1, "%.1f°C  %.0f %RH", bme.temperature, bme.humidity);
+  sprintf(line2, "SET %d°C", set_temp);
+  sprintf(line3_1, "PWM %u", pwm_output);
+  sprintf(line3_2, "%%");
+  sprintf(line3_3, "%s", output_state);
+  u8g2.clearBuffer(); // clear the internal memory
+  u8g2.drawUTF8(0,18, line1);
+  u8g2.drawUTF8(0,41, line2);
+  u8g2.drawUTF8(0,64, line3_1);
+  u8g2.drawUTF8(70,64, line3_2);
+  u8g2.drawUTF8(100,64, line3_3);
+  u8g2.sendBuffer(); // transfer internal memory to the display
 }
 
 
@@ -264,22 +287,5 @@ void loop() {
     button3_pressed = false;
 	}
 
-  // Display a message on the OLED
-  char line1 [16];
-  char line2 [16];
-  char line3_1 [16];
-  char line3_2 [16];
-  char line3_3 [16];
-  sprintf(line1, "%.1f°C  %.0f %RH", bme.temperature, bme.humidity);
-  sprintf(line2, "SET %d°C", set_temp);
-  sprintf(line3_1, "PWM %u", pwm_output);
-  sprintf(line3_2, "%%");
-  sprintf(line3_3, "%s", output_state);
-  u8g2.clearBuffer(); // clear the internal memory
-  u8g2.drawUTF8(0,18, line1);
-  u8g2.drawUTF8(0,41, line2);
-  u8g2.drawUTF8(0,64, line3_1);
-  u8g2.drawUTF8(70,64, line3_2);
-  u8g2.drawUTF8(100,64, line3_3);
-  u8g2.sendBuffer(); // transfer internal memory to the display
+  update_display();
 }
