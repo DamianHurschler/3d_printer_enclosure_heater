@@ -5,9 +5,6 @@
 #include <U8g2lib.h>
 #include <math.h>
 
-// Enable serial debugging
-bool enable_serial = true;
-
 // SH1106 LILYGO 1.3" T-Beam OLED display using I2C
 U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE, /* clock=*/ 22, /* data=*/ 23);
 const uint8_t * display_font = u8g2_font_logisoso16_tf; // Set display font - https://github.com/olikraus/u8g2/wiki/fntlist12
@@ -48,8 +45,10 @@ int pwm_output = 0;
 // Define PWM parameters
 const int pwmPin = 15; 
 const int pwmChannel = 0;       // PWM channel (0-15)
-const int pwmFrequency = 4;  // Frequency of PWM signal in Hz, minimum is 4
+const int pwmFrequency = 4;     // Frequency of PWM signal in Hz, minimum is 4
 const int pwmResolution = 8;    // PWM resolution in bits (8 bits gives 256 levels)
+float pwm_scaling_factor = 0;   // Scaling factor to get from percent to binary
+int dutyCycle_bin = 0;          // Resulting binary value for pwm
 
 
 
@@ -58,9 +57,7 @@ const int pwmResolution = 8;    // PWM resolution in bits (8 bits gives 256 leve
 void read_sensor(){
     // Perform a measurement and confirm it's available
     if (!bme.performReading()) {
-      if (enable_serial){
       Serial.println("Failed to perform reading :(");
-      }
     }
     bme.temperature = bme.temperature + temp_offset;
 }
@@ -90,8 +87,6 @@ void pid_control(){
     }
     error_prev = error;
     measurement_prev = measurement;
-    if (enable_serial) {
-    }
 }
 
 
@@ -123,6 +118,10 @@ void serial_print(){
   Serial.printf("integral: %.1f\n", integral);
   Serial.printf("derivative: %.1f\n", derivative);
   Serial.printf("pwm_output: %u\n", pwm_output);
+
+  // Print PWM output variables
+  Serial.printf("pwm_scaling_factor: %.2f\n", pwm_scaling_factor);
+  Serial.printf("dutyCycle_bin: %u\n", dutyCycle_bin);
 }
 
 
@@ -137,12 +136,8 @@ void once_per_second(void * arg){
     // Set PWM duty cycle
     // Calculate resolution based on 'pwmResolution' and scale it to 100% duty cycle
     // Example: 8bit res has 2pow8-1, i.e. 255 steps of resolution to cover 0-100% duty cycle
-    float pwm_scaling_factor = (pow(2, pwmResolution) -1) / 100;
-    int dutyCycle_bin = pwm_scaling_factor * pwm_output;
-    if (enable_serial){
-      // Serial.printf("pwm_scaling_factor: %.2f\n", pwm_scaling_factor);
-      // Serial.printf("dutyCycle_bin: %u\n", dutyCycle_bin);
-    }
+    pwm_scaling_factor = (pow(2, pwmResolution) -1) / 100;
+    dutyCycle_bin = pwm_scaling_factor * pwm_output;
     ledcWrite(pwmChannel, dutyCycle_bin); // Write to PWM pin
 
     serial_print();
@@ -172,11 +167,9 @@ void IRAM_ATTR ISR_button3_pressed() {
 
 void setup() {
 
-  if (enable_serial){
-    // Initialise serial debug interface
-    Wire.begin();
-    Serial.begin(115200);
-  }
+  // Initialise serial debug interface
+  Wire.begin();
+  Serial.begin(115200);
 
   // Set the button pins as input with internal pull-up resistors
   pinMode(BUTTON_1_PIN, INPUT_PULLUP);
@@ -190,9 +183,7 @@ void setup() {
 
   // Initialize the BME680 sensor
   if (!bme.begin()) {
-    if (enable_serial){
-      Serial.println("Could not find a valid BME680 sensor, check wiring!");
-    }
+    Serial.println("Could not find a valid BME680 sensor, check wiring!");
   }
 
   // Set up oversampling and filter initialization
@@ -227,9 +218,7 @@ void loop() {
 
 	if (button1_pressed) {
     if ((millis() - last_interrupt_time) > button_debounce){
-      if (enable_serial){
-        Serial.printf("Button 1 has been pressed\n");
-      }
+      Serial.printf("Button 1 has been pressed\n");
       set_temp = set_temp + 1;
       last_interrupt_time = millis();
     }
@@ -238,9 +227,7 @@ void loop() {
 
   if (button2_pressed) {
     if ((millis() - last_interrupt_time) > button_debounce){
-      if (enable_serial){
-        Serial.printf("Button 2 has been pressed\n");
-      }
+      Serial.printf("Button 2 has been pressed\n");
       last_interrupt_time = millis();
     }
     button2_pressed = false;
@@ -248,9 +235,7 @@ void loop() {
 
   if (button3_pressed) {
     if ((millis() - last_interrupt_time) > button_debounce){
-      if (enable_serial){
-        Serial.printf("Button 3 has been pressed\n");
-      }
+      Serial.printf("Button 3 has been pressed\n");
       set_temp = set_temp - 1;
       last_interrupt_time = millis();
     }
