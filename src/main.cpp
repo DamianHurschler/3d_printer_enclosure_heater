@@ -165,7 +165,7 @@ void update_display(){
   u8g2.drawUTF8(0,18, line1);
   u8g2.drawUTF8(0,41, line2);
   u8g2.drawUTF8(0,64, line3_1);
-  u8g2.drawUTF8(70,64, line3_2);
+  u8g2.drawUTF8(75,64, line3_2);
   u8g2.drawUTF8(100,64, line3_3);
   u8g2.sendBuffer(); // transfer internal memory to the display
 }
