@@ -4,6 +4,7 @@
 #include <Adafruit_BME680.h>
 #include <U8g2lib.h>
 #include <math.h>
+#include "pid.h"
 
 // SH1106 LILYGO 1.3" T-Beam OLED display using I2C
 U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE, /* clock=*/ 22, /* data=*/ 23);
@@ -24,23 +25,25 @@ Adafruit_BME680 bme; // I2C
 float temp_offset = -3; // Offset to apply to sensor reading to correct temperature.
 
 // Definitions for PID controller
-signed int set_temp = 25;       // Initial set point of PID controller
-float Kp = 40.0f;               // Proportional gain
-float Ki = 0.2f;                // Integrator gain
-float Kd = 0.1f;                // Derivative gain
-float measurement = 0.0f;       // Measurement variable
-float measurement_prev = 0.0f;  // Mesurement of previous control loop cycle
-float error = 0.0f;             // Error value, difference between set point and measurement
-float error_prev = 0.0f;        // Error value of previous control loop cycle
-float proportional = 0.0f;      // Proportional part of PID output
-float integral = 0.0f;          // Integral part of PID output
-float integral_max = 70.0f;     // Clamping of max allowable integral part - prevents windup and integral overshoot
-float integral_min = 0.0f;      // Clamping of min allowable integral part
-float derivative = 0.0f;        // Derivative part of PID output
-int interval = 1; //s           // PID loop update interval
-int pwm_output_max = 100;       // Max allowable PID control output value
-int pwm_output_min = 0;         // Min allowable PID control output value
-int pwm_output = 0;             // Initial PID output
+#define PID_KP  40.0f
+#define PID_KI  0.0002f //0.2f
+#define PID_KD  0.0001f //0.1f
+#define PID_INTEGRAL_MAX 70.0f
+#define PID_INTEGRAL_MIN  0.0f
+#define PID_OUTPUT_MAX 100.0f
+#define PID_OUTPUT_MIN  0.0f
+#define PID_INTERVAL_MS  1000UL
+bool pid_initialised = false;
+float measurement = 0.0f;
+float set_point = 26.0f;
+float pid_out = 0.0f;
+unsigned long last_run = 0UL;
+
+// Pass definitions to pid_data struct
+pid_data pid = { PID_KP, PID_KI, PID_KD,
+                PID_OUTPUT_MAX, PID_OUTPUT_MIN,
+                PID_INTEGRAL_MAX, PID_INTEGRAL_MIN, 
+                PID_INTERVAL_MS };
 
 // Define PWM parameters
 bool pwm_enable = false;
@@ -55,97 +58,72 @@ int dutyCycle_bin = 0;          // Resulting binary value for pwm
 
 
 
-// Read data from sensor, and make it available via 'bme' constructor
-void read_sensor(){
+float read_sensor(){
     // Perform a measurement and confirm it's available
     if (!bme.performReading()) {
       Serial.println("Failed to perform reading :(");
     }
     bme.temperature = bme.temperature + temp_offset;
+    return bme.temperature;
 }
 
 
 
 
-void pid_control(){
-    // Implement check to only start producing output if sensor reading was successful
-    measurement = bme.temperature;
-    error = set_temp - measurement;
-    proportional = Kp * error;
-    integral = integral + 0.5f * Ki * interval * (error + error_prev);
-    if (integral > integral_max) {
-      integral = integral_max;
-    } else if (integral < integral_min) {
-      integral =integral_min;
-    }
-    derivative = - (Kd * (measurement - measurement_prev) / interval);
-    pwm_output = proportional + integral + derivative;
-    if (pwm_output > pwm_output_max){ // Clamp to max output
-      pwm_output = pwm_output_max;
-    }
-    if (pwm_output < pwm_output_min){ // Clamp to min output
-      pwm_output = pwm_output_min;
-    }
-    error_prev = error;
-    measurement_prev = measurement;
-}
-
-
-
-
-void set_output(){
+int set_output(float pid_out, bool pwm_enable){
   // Set PWM duty cycle
   // Calculate resolution based on 'pwmResolution' and scale it to 100% duty cycle
   // Example: 8bit res has 2pow8-1, i.e. 255 steps of resolution to cover 0-100% duty cycle
-  if (!pwm_enable) {
-    pwm_output = 0;
-  } 
   pwm_scaling_factor = (pow(2, pwmResolution) -1) / 100;
-  dutyCycle_bin = pwm_scaling_factor * pwm_output;
+  dutyCycle_bin = pwm_scaling_factor * pid_out;
   ledcWrite(pwmChannel, dutyCycle_bin); // Write to PWM pin
+  return 0;
 }
 
 
 
 
-void serial_print(){
+void serial_print(pid_data *pid){
   // Print temperature
-  Serial.print("Temperature = ");
-  Serial.print(bme.temperature);
-  Serial.println(" *C");
+  // Serial.print("Temperature = ");
+  // Serial.print(bme.temperature);
+  // Serial.println(" *C");
 
   // Print humidity
-  Serial.print("Humidity = ");
-  Serial.print(bme.humidity);
-  Serial.println(" %");
+  // Serial.print("Humidity = ");
+  // Serial.print(bme.humidity);
+  // Serial.println(" %");
 
   // Print pressure
-  Serial.print("Pressure = ");
-  Serial.print(bme.pressure / 100.0); // Convert to hPa
-  Serial.println(" hPa");
+  // Serial.print("Pressure = ");
+  // Serial.print(bme.pressure / 100.0); // Convert to hPa
+  // Serial.println(" hPa");
 
   // Print gas resistance
-  Serial.print("Gas Resistance = ");
-  Serial.print(bme.gas_resistance / 1000.0); // Convert to KOhms
-  Serial.println(" KOhms");
+  // Serial.print("Gas Resistance = ");
+  // Serial.print(bme.gas_resistance / 1000.0); // Convert to KOhms
+  // Serial.println(" KOhms");
 
   // Print PID variables
-  Serial.printf("proportional: %.1f\n", proportional);
-  Serial.printf("integral: %.1f\n", integral);
-  Serial.printf("derivative: %.1f\n", derivative);
-  Serial.printf("pwm_output: %u\n", pwm_output);
+  Serial.printf("measurement: %.1f\n", measurement);
+  Serial.printf("set_point: %.0f\n", set_point);
+  Serial.printf("pid->interval: %u\n", pid->interval);
+  Serial.printf("pid->proportional: %.1f\n", pid->proportional);
+  Serial.printf("pid->integral: %.1f\n", pid->integral);
+  Serial.printf("pid->derivative: %.1f\n", pid->derivative);
+  Serial.printf("pid->pid_out: %.0f\n", pid->pid_out);
 
   // Print PWM output variables
-  Serial.printf("pwm_scaling_factor: %.2f\n", pwm_scaling_factor);
+  // Serial.printf("pwm_scaling_factor: %.2f\n", pwm_scaling_factor);
   Serial.printf("pwm_enable: %s\n", pwm_enable ? "true" : "false");
-  Serial.printf("output_state: %s\n", output_state);
-  Serial.printf("dutyCycle_bin: %u\n", dutyCycle_bin);
+  // Serial.printf("output_state: %s\n", output_state);
+  // Serial.printf("dutyCycle_bin: %u\n", dutyCycle_bin);
 }
 
 
 
 
-void update_display(){
+void update_display(float set_point, float pid_out){
   // Initialise variables for display test lines and parts of lines
   char line1 [16];
   char line2 [16];
@@ -155,8 +133,8 @@ void update_display(){
 
   // Convert data and text and store it in variables
   sprintf(line1, "%.1f°C  %.0f %RH", bme.temperature, bme.humidity);
-  sprintf(line2, "SET %d°C", set_temp);
-  sprintf(line3_1, "PWM %u", pwm_output);
+  sprintf(line2, "SET %.0f°C", set_point);
+  sprintf(line3_1, "PWM %.0f", pid_out);
   sprintf(line3_2, "%%");
   sprintf(line3_3, "%s", output_state);
 
@@ -168,24 +146,6 @@ void update_display(){
   u8g2.drawUTF8(75,64, line3_2);
   u8g2.drawUTF8(100,64, line3_3);
   u8g2.sendBuffer(); // transfer internal memory to the display
-}
-
-
-
-
-void once_per_second(void * arg){
-  // Execute this loop once per second, independent of main loop
-  while(1){
-    read_sensor();
-
-    pid_control();
-
-    set_output();
-
-    serial_print();
-
-    delay(1000);
-  }
 }
 
 
@@ -249,19 +209,18 @@ void setup() {
   ledcSetup(pwmChannel, pwmFrequency, pwmResolution);
   ledcAttachPin(pwmPin, pwmChannel);
 
-  // Create independent task which will run continuously 'in the background'
-  xTaskCreate(once_per_second, "once_per_second", 4096, NULL, 2, NULL);
+  // Initialise PID controller
+  pid_init(&pid);
 }
 
 
 
 
 void loop() {
-
 	if (button1_pressed) {
     if ((millis() - last_interrupt_time) > button_debounce){
       Serial.printf("Button 1 has been pressed\n");
-      set_temp = set_temp + 1;
+      set_point = set_point + 1;
       last_interrupt_time = millis();
     }
     button1_pressed = false;
@@ -276,6 +235,7 @@ void loop() {
       } else {
         pwm_enable = true;
         sprintf(output_state, "ON");
+        pid_init(&pid); // Reset PID variables on reactivation of output
       }
       last_interrupt_time = millis();
     }
@@ -285,11 +245,26 @@ void loop() {
   if (button3_pressed) {
     if ((millis() - last_interrupt_time) > button_debounce){
       Serial.printf("Button 3 has been pressed\n");
-      set_temp = set_temp - 1;
+      set_point = set_point - 1;
       last_interrupt_time = millis();
     }
     button3_pressed = false;
 	}
 
-  update_display();
+  measurement = read_sensor();
+
+  if (( (millis() - last_run ) > PID_INTERVAL_MS) & ( pwm_enable )) {
+    pid_out = pid_update(&pid, set_point, measurement);
+    last_run = millis();
+  }
+
+  if (!pwm_enable) {
+    pid_out = 0;
+  } 
+
+  set_output(pid_out, pwm_enable);
+
+  serial_print(&pid);
+
+  update_display(set_point, pid_out);
 }
