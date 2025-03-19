@@ -105,17 +105,14 @@ void serial_print(pid_data *pid){
   // Serial.println(" KOhms");
 
   // Print PID variables
-  Serial.printf("measurement: %.1f\n", measurement);
-  Serial.printf("set_point: %.0f\n", set_point);
-  Serial.printf("pid->interval: %u\n", pid->interval);
-  Serial.printf("pid->proportional: %.1f\n", pid->proportional);
-  Serial.printf("pid->integral: %.1f\n", pid->integral);
-  Serial.printf("pid->derivative: %.1f\n", pid->derivative);
-  Serial.printf("pid->pid_out: %.0f\n", pid->pid_out);
+  // Optimised for plotting with https://github.com/hacknus/serial-monitor-rust
+  Serial.printf("measurement, set_point, pid->proportional, pid->integral, pid->derivative, pid->pid_out\n");
+  Serial.printf("%.1f,%.0f,%.1f,%.1f,%.1f,%.0f\n", measurement, set_point, pid->proportional, pid->integral, pid->derivative, pid->pid_out);
+  // Serial.printf("pid->interval %u\n", pid->interval);
 
   // Print PWM output variables
   // Serial.printf("pwm_scaling_factor: %.2f\n", pwm_scaling_factor);
-  Serial.printf("pwm_enable: %s\n", pwm_enable ? "true" : "false");
+  // Serial.printf("pwm_enable %s\n", pwm_enable ? "true" : "false");
   // Serial.printf("output_state: %s\n", output_state);
   // Serial.printf("dutyCycle_bin: %u\n", dutyCycle_bin);
 }
